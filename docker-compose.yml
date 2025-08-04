@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  ai-voice-agent:
+    image: registry.texsys.io/ibt/ai-voice-agent:1
+    container_name: ai-voice-agent
+    environment:
+      # LiveKit Configuration
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      
+      # AI Service API Keys
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CARTESIA_API_KEY=${CARTESIA_API_KEY}
+      
+      # Halo PSA Configuration
+      - HALO_CLIENT_ID=${HALO_CLIENT_ID}
+      - HALO_CLIENT_SECRET=${HALO_CLIENT_SECRET}
+      - HALO_API_URL=${HALO_API_URL:-https://intergrated.halopsa.com/api}
+      
+      # Agent Configuration
+      - AGENT_NAME=${AGENT_NAME:-telephony_agent}
+    
+    # Optional: Mount a .env file if you prefer that approach
+    # env_file:
+    #   - .env
+    
+    restart: unless-stopped
+    
+    # If you need to expose any ports
+    # ports:
+    #   - "8080:8080"
+    
+    # For debugging
+    stdin_open: true
+    tty: true 
