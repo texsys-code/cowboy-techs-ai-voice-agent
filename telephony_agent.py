@@ -105,6 +105,16 @@ async def debug_caller_info() -> str:
     if hasattr(ctx, 'room'):
         info.append(f"Room name: {ctx.room.name}")
     
+    # Add more detailed information for debugging
+    if hasattr(ctx, 'halo_user_id'):
+        info.append(f"Halo user ID: {ctx.halo_user_id}")
+    if hasattr(ctx, 'halo_client_id'):
+        info.append(f"Halo client ID: {ctx.halo_client_id}")
+    if hasattr(ctx, 'halo_site_id'):
+        info.append(f"Halo site ID: {ctx.halo_site_id}")
+    if hasattr(ctx, 'caller_id'):
+        info.append(f"Caller ID: {ctx.caller_id}")
+    
     if info:
         return "Caller information: " + ", ".join(info)
     else:
@@ -283,14 +293,29 @@ async def get_open_it_support_ticket(
     context_company = getattr(ctx, 'caller_company', None)
     
     # Use context values first, then fall back to provided parameters
-    caller_name = context_name if context_name else name
-    caller_company = context_company if context_company else company
+    # Make this more explicit to ensure context values are prioritized
+    # Handle both None and empty string cases
+    if context_name and context_name.strip():
+        caller_name = context_name
+        logger.info(f"[TICKET] Using context name: '{context_name}'")
+    else:
+        caller_name = name if name and name.strip() else None
+        logger.info(f"[TICKET] Using parameter name: '{name}'")
+    
+    if context_company and context_company.strip():
+        caller_company = context_company
+        logger.info(f"[TICKET] Using context company: '{context_company}'")
+    else:
+        caller_company = company if company and company.strip() else None
+        logger.info(f"[TICKET] Using parameter company: '{company}'")
     
     # Log what information we're using
     logger.info(f"[TICKET] Context values - caller_name: '{context_name}', caller_company: '{context_company}'")
     logger.info(f"[TICKET] Function parameters - name: '{name}', company: '{company}'")
     logger.info(f"[TICKET] Final values - caller_name: '{caller_name}', caller_company: '{caller_company}'")
     logger.info(f"[TICKET] Using context name: {context_name is not None}, Using context company: {context_company is not None}")
+    logger.info(f"[TICKET] Parameter types - name type: {type(name)}, company type: {type(company)}")
+    logger.info(f"[TICKET] Context types - context_name type: {type(context_name)}, context_company type: {type(context_company)}")
     
     # Use callback number if available, otherwise use caller phone
     contact_number = callback_number or caller_phone
@@ -586,7 +611,9 @@ async def entrypoint(ctx: JobContext):
         - When creating tickets, use the caller information that was automatically found in our system if available.
         - If caller information was found automatically, mention this to the user when confirming ticket details.
         - When calling get_open_it_support_ticket, do NOT provide name and company parameters if the system already found this information automatically.
-        - Only ask for name and company if the system couldn't find the caller's information automatically.""",
+        - Only ask for name and company if the system couldn't find the caller's information automatically.
+        - IMPORTANT: If caller information was found automatically during the initial lookup, call get_open_it_support_ticket with NO parameters for name and company.
+        - The function will automatically use the caller information that was found and stored in the system.""",
         tools=[get_current_time, get_open_it_support_ticket, get_open_copier_support_ticket, reorder_copier_supplies, end_call, get_caller_phone_number, debug_caller_info, lookup_caller_in_system, store_caller_info, store_callback_number]
     )
     
