@@ -22,6 +22,9 @@ services:
       
       # Agent Configuration
       - AGENT_NAME=${AGENT_NAME:-telephony_agent}
+
+      # API URL
+      - API_URL=${API_URL}
     
     # Optional: Mount a .env file if you prefer that approach
     # env_file:

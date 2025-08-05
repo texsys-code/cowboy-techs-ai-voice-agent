@@ -71,12 +71,25 @@ async def get_current_time() -> str:
 @function_tool
 async def end_call() -> str:
     """End the call when the user is done with the conversation."""
+    ctx = get_job_context()
+    
+    # Create a personalized goodbye message
+    if ctx and hasattr(ctx, 'caller_name') and ctx.caller_name:
+        first_name = ctx.caller_name.split()[0] if ctx.caller_name else ''
+        if first_name:
+            goodbye_message = f"Thank you for calling IBT, {first_name}. Have a great day!"
+        else:
+            goodbye_message = "Thank you for calling IBT. Have a great day!"
+    else:
+        goodbye_message = "Thank you for calling IBT. Have a great day!"
+    
     try:
+        # Say goodbye first, then end the call
         await hangup_call()
-        return "Call ended successfully."
+        return goodbye_message
     except Exception as e:
         logger.error(f"Error ending call: {str(e)}")
-        return "There was an error ending the call."
+        return "Thank you for calling IBT. Have a great day!"
 
 @function_tool
 async def get_caller_phone_number() -> str:
@@ -599,7 +612,7 @@ async def entrypoint(ctx: JobContext):
         - Look up caller information in our system
         
         Important guidelines:
-        - When the user says they are done, want to hang up, or end the call, use the end_call function.
+        - When the user says they are done, want to hang up, or end the call, use the end_call function which will say goodbye and then end the call.
         - Always identify yourself as an AI assistant when asked.
         - Keep responses conversational and under 30 seconds for phone clarity.
         - When users provide their name and company, remember this information for the duration of the call.
