@@ -69,9 +69,8 @@ async def get_current_time() -> str:
     return f"The current time is {datetime.now().strftime('%I:%M %p')}"
 
 @function_tool
-async def end_call() -> str:
+async def end_call(ctx: RunContext) -> str:
     """End the call when the user is done with the conversation."""
-    ctx = get_job_context()
     
     # Create a personalized goodbye message
     if ctx and hasattr(ctx, 'caller_name') and ctx.caller_name:
@@ -83,13 +82,14 @@ async def end_call() -> str:
     else:
         goodbye_message = "Thank you for calling IBT. Have a great day!"
     
-    try:
-        # Say goodbye first, then end the call
-        await hangup_call()
-        return goodbye_message
-    except Exception as e:
-        logger.error(f"Error ending call: {str(e)}")
-        return "Thank you for calling IBT. Have a great day!"
+    await ctx.session.say(goodbye_message, allow_interruptions=False,)
+
+    current_speech = ctx.session.current_speech
+
+    if current_speech:
+        await current_speech.wait_for_playout()
+    
+    await hangup_call()
 
 @function_tool
 async def get_caller_phone_number() -> str:
@@ -377,7 +377,7 @@ async def get_open_it_support_ticket(
             f"Company: {caller_company}\n"
             f"Request Details: {details}\n"
             f"Phone Number: {contact_number}\n"
-            "Is this information correct? Please say 'yes' to confirm or provide the correct information."
+            "Is this information correct? Also, is there anything else you'd like to add to the ticket before I open it? Please say 'yes' to confirm and open the ticket, or let me know if you need to add more details."
         )
     # If confirmed, proceed to create the ticket
     loop = asyncio.get_event_loop()
@@ -416,12 +416,12 @@ async def get_open_it_support_ticket(
             result = response.json()
             if result.get('success') and result.get('data', {}).get('id'):
                 ticket_id = result['data']['id']
-                return f"Your IT support ticket has been opened. Ticket ID: {ticket_id}"
+                return f"Your IT support ticket has been opened. Ticket ID: {ticket_id}. A tech will get back to you in 1-2 hours."
             elif result.get('id'):  # Direct Halo API response format
                 ticket_id = result['id']
-                return f"Your IT support ticket has been opened. Ticket ID: {ticket_id}"
+                return f"Your IT support ticket has been opened. Ticket ID: {ticket_id}. A tech will get back to you in 1-2 hours."
             else:
-                return "Your IT support ticket has been opened, but I could not retrieve the ticket ID."
+                return "Your IT support ticket has been opened, but I could not retrieve the ticket ID. A tech will get back to you in 1-2 hours."
         else:
             logger.error(f"API error creating ticket: {response.status_code} - {response.text}")
             return "Sorry, there was an error opening your IT support ticket. Please try again or contact support directly."
