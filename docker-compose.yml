@@ -1,8 +1,37 @@
 version: '3.8'
 
 services:
+  api:
+    image: registry.texsys.io/ibt/ai-agent-api:1
+    container_name: ibt-api
+    environment:
+      # MongoDB Configuration
+      - MONGODB_URI=${MONGODB_URI}
+      
+      # Halo PSA Configuration
+      - HALO_CLIENT_ID=${HALO_CLIENT_ID}
+      - HALO_CLIENT_SECRET=${HALO_CLIENT_SECRET}
+      - HALO_API_URL=${HALO_API_URL:-https://intergrated.halopsa.com/api}
+      
+      # API Configuration
+      - PORT=${API_PORT:-3000}
+      - NODE_ENV=${NODE_ENV:-development}
+      - TEST_MODE=${TEST_MODE:-false}
+      
+      # CORS Configuration
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+    
+    ports:
+      - "${API_PORT:-3000}:3000"
+    
+    restart: unless-stopped
+    
+    # For debugging
+    stdin_open: true
+    tty: true
+
   ai-voice-agent:
-    image: registry.texsys.io/ibt/ai-voice-agent:1
+    image: registry.texsys.io/ibt/ai-voice-agent:4
     container_name: ai-voice-agent
     environment:
       # LiveKit Configuration
@@ -23,8 +52,11 @@ services:
       # Agent Configuration
       - AGENT_NAME=${AGENT_NAME:-telephony_agent}
 
-      # API URL
-      - API_URL=${API_URL}
+      # API URL - Points to the API service
+      - API_URL=${API_URL:-http://api:3000}
+    
+    depends_on:
+      - api
     
     # Optional: Mount a .env file if you prefer that approach
     # env_file:
