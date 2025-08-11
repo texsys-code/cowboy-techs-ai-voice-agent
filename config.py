@@ -19,5 +19,9 @@ HALO_API_URL = os.getenv("HALO_API_URL", "https://intergrated.halopsa.com/api")
 # Node.js API configuration
 API_URL = os.getenv("API_URL", "http://localhost:3000")
 
+# Company configuration
+COMPANY_NAME = os.getenv("COMPANY_NAME", "Cowboy Technologies, LLC")
+EMAIL_DOMAIN = os.getenv("EMAIL_DOMAIN", "cowboytech.com")
+
 # Call transfer configuration
 MAIN_OFFICE_NUMBER = os.getenv("MAIN_OFFICE_NUMBER", "+12108884900") 
