@@ -17,4 +17,7 @@ HALO_CLIENT_SECRET = os.getenv("HALO_CLIENT_SECRET")
 HALO_API_URL = os.getenv("HALO_API_URL", "https://intergrated.halopsa.com/api")
 
 # Node.js API configuration
-API_URL = os.getenv("API_URL", "http://localhost:3000") 
+API_URL = os.getenv("API_URL", "http://localhost:3000")
+
+# Call transfer configuration
+MAIN_OFFICE_NUMBER = os.getenv("MAIN_OFFICE_NUMBER", "+12108884900") 

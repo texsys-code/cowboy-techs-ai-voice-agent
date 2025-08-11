@@ -17,7 +17,7 @@ from livekit.agents import (
 )
 from livekit.plugins import deepgram, openai, cartesia, silero
 import os
-from config import API_URL
+from config import API_URL, MAIN_OFFICE_NUMBER
 
 load_dotenv()
 logger = logging.getLogger("telephony-agent")
@@ -282,6 +282,77 @@ async def store_callback_number(callback_number: str) -> str:
         ctx.callback_number = callback_number
         return f"Thank you. I've noted your callback number as {callback_number}. How can I help you today?"
     return "I couldn't save your callback number. How can I help you today?"
+
+@function_tool
+async def transfer_call(ctx: RunContext) -> str:
+    """Transfer the call to a human agent, called after confirming with the user"""
+    
+    # Main office number - configured via config.py
+    transfer_to = MAIN_OFFICE_NUMBER
+
+    logger.info(f"Transferring call to {transfer_to}")
+
+    # let the message play fully before transferring
+    await ctx.session.generate_reply(
+        instructions="Inform the user that you're transferring them to a different agent."
+    )
+
+    job_ctx = get_job_context()
+    try:
+        # First, try SIP transfer (if enabled)
+        try:
+            # Get the actual participant from the room
+            participants = await job_ctx.api.room.list_participants(
+                api.ListParticipantsRequest(room=job_ctx.room.name)
+            )
+            
+            # Find the SIP participant (the caller)
+            sip_participant = None
+            for participant in participants.participants:
+                if participant.identity and participant.identity != "agent":
+                    sip_participant = participant
+                    break
+            
+            if not sip_participant:
+                logger.error("No SIP participant found in room for transfer")
+                return "Sorry, I couldn't find the caller to transfer. Please try again or contact support directly."
+            
+            logger.info(f"Attempting SIP transfer for participant: {sip_participant.identity} to {transfer_to}")
+            
+            await job_ctx.api.sip.transfer_sip_participant(
+                api.TransferSIPParticipantRequest(
+                    room_name=job_ctx.room.name,
+                    participant_identity=sip_participant.identity,
+                    transfer_to=f"tel:{transfer_to}",
+                )
+            )
+            return f"Transferring your call to {transfer_to}."
+            
+        except Exception as sip_error:
+            logger.warning(f"SIP transfer failed: {sip_error}")
+            
+            # Fallback: Use call forwarding approach
+            logger.info("Attempting call forwarding as fallback")
+            
+            # Inform the user about the transfer
+            await ctx.session.say(
+                f"I'm transferring you to our main office at {transfer_to}. Please hold while I connect you.",
+                allow_interruptions=False
+            )
+            
+            # Wait for the message to complete
+            current_speech = ctx.session.current_speech
+            if current_speech:
+                await current_speech.wait_for_playout()
+            
+            # End the current call (this will disconnect the caller)
+            await hangup_call()
+            
+            return f"Call transferred to {transfer_to}. The caller has been disconnected and should call the main office number directly."
+            
+    except Exception as e:
+        logger.error(f"Error transferring call: {e}")
+        return f"Sorry, I encountered an error while trying to transfer your call. Please call our main office directly at {transfer_to}."
 
 @function_tool
 async def get_open_it_support_ticket(
@@ -607,6 +678,7 @@ async def entrypoint(ctx: JobContext):
         - Open an IT support ticket
         - Open a copier support ticket
         - Reorder copier supplies
+        - Transfer the call to a human agent
         - End the call when the user is done
         - Get the caller's phone number
         - Look up caller information in our system
@@ -626,8 +698,11 @@ async def entrypoint(ctx: JobContext):
         - When calling get_open_it_support_ticket, do NOT provide name and company parameters if the system already found this information automatically.
         - Only ask for name and company if the system couldn't find the caller's information automatically.
         - IMPORTANT: If caller information was found automatically during the initial lookup, call get_open_it_support_ticket with NO parameters for name and company.
-        - The function will automatically use the caller information that was found and stored in the system.""",
-        tools=[get_current_time, get_open_it_support_ticket, get_open_copier_support_ticket, reorder_copier_supplies, end_call, get_caller_phone_number, debug_caller_info, lookup_caller_in_system, store_caller_info, store_callback_number]
+        - The function will automatically use the caller information that was found and stored in the system.
+        - Use the transfer_call function when a user requests to speak with a human agent, wants to be transferred, or when you cannot help with their specific request.
+        - Before transferring, confirm with the user that they want to be transferred to a human agent.
+        - When transferring, inform the user that you're transferring them to a different agent.""",
+        tools=[get_current_time, get_open_it_support_ticket, get_open_copier_support_ticket, reorder_copier_supplies, end_call, get_caller_phone_number, debug_caller_info, lookup_caller_in_system, store_caller_info, store_callback_number, transfer_call]
     )
     
     # Configure the voice processing pipeline optimized for telephony
@@ -684,12 +759,12 @@ async def entrypoint(ctx: JobContext):
         # We found the caller's information
         first_name = ctx.caller_name.split()[0] if ctx.caller_name else ''
         if first_name:
-            greeting_message = f"{time_greeting} {first_name}! Welcome back to IBT. I can help you open an IT support ticket, open a copier support ticket, or help you reorder copier supplies. What can I help you with today?"
+            greeting_message = f"{time_greeting} {first_name}! Thank you for calling Cowboy Technologies, LLC. I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, or transfer you to a human agent if needed. What can I help you with today?"
         else:
-            greeting_message = f"{time_greeting}! Welcome back to IBT. I can help you open an IT support ticket, open a copier support ticket, or help you reorder copier supplies. What can I help you with today?"
+            greeting_message = f"{time_greeting}! Thank you for calling Cowboy Technologies, LLC. I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, or transfer you to a human agent if needed. What can I help you with today?"
     else:
         # We didn't find the caller's information
-        greeting_message = f"{time_greeting}! Thank you for calling IBT. I can help you open an IT support ticket, open a copier support ticket, or help you reorder copier supplies. Could you please tell me your name and company so I can assist you better?"
+        greeting_message = f"{time_greeting}! Thank you for calling Cowboy Technologies, LLC. I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, or transfer you to a human agent if needed. Could you please tell me your name and company so I can assist you better?"
     
     await session.generate_reply(
         instructions=f"""Say '{greeting_message}'""",
