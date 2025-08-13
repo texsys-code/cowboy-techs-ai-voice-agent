@@ -50,15 +50,15 @@ Agent: "Great — I can take your information and have one of our sales represen
 
 ### **Core Components**
 
-#### **1. Email System Module (`lib/email_system.py`)**
-- **SMTP Integration**: Handles email sending via configured SMTP server
-- **Template System**: Creates professional, formatted sales inquiry emails
+#### **1. API Integration (`lib/api.py`)**
+- **HTTP Client**: Makes POST requests to the sales inquiry endpoint
+- **Data Validation**: Ensures all required fields are present
 - **Error Handling**: Comprehensive error handling and logging
-- **Configuration**: Environment variable-based configuration
+- **Response Processing**: Handles API responses and error codes
 
 #### **2. Sales Functions (`lib/call_tools/sales.py`)**
 - **submit_sales_inquiry**: Main function for processing sales inquiries
-- **test_email_system**: Debug tool for testing email functionality
+- **test_email_system**: Debug tool for testing email functionality via API
 - **Integration**: Seamless integration with voice agent system
 
 #### **3. Agent Integration**
@@ -79,63 +79,34 @@ async def submit_sales_inquiry(
 ):
 ```
 
-## Email System Details
+## API Integration Details
 
-### **SMTP Configuration**
-The system supports configurable SMTP settings via environment variables:
+### **API Endpoint**
+The system sends sales inquiries to the API endpoint:
 
-```bash
-# Required SMTP Configuration
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-
-# Optional Configuration
-SALES_EMAIL=sales@cowboytechnologies.com
-COMPANY_NAME=Cowboy Technologies, LLC
+```
+POST {API_URL}/api/sales/inquiry
 ```
 
-### **Email Format**
-Sales inquiry emails include:
-
-#### **Subject Line**
-```
-New Sales Inquiry - {Caller Name} ({Company Name})
-```
-
-#### **Email Body Structure**
-```
-New Sales Inquiry Received
-Timestamp: {Date and Time}
-
-=== CONTACT INFORMATION ===
-Name: {Caller Name}
-Phone: {Phone Number}
-Email: {Email Address}
-Company: {Company Name} (if provided)
-
-=== INQUIRY DETAILS ===
-Description: {What they're looking for}
-
-=== ADDITIONAL NOTES ===
-{Any additional information provided}
-
-=== SYSTEM INFORMATION ===
-Source: Voice Agent System
-Company: {Company Name}
-
-Please follow up with this potential customer within 24 hours.
-
-Best regards,
-Voice Agent System
+### **Request Format**
+```json
+{
+  "caller_name": "John Smith",
+  "caller_phone": "555-123-4567",
+  "caller_email": "john@company.com",
+  "inquiry_description": "Interested in copier services for new office",
+  "caller_company": "ABC Corporation",
+  "additional_notes": "Looking for comprehensive service agreement"
+}
 ```
 
-### **Email Delivery**
-- **Recipient**: Sales team email address (configurable)
-- **Sender**: Configured SMTP account
-- **Delivery**: Immediate delivery via SMTP
-- **Tracking**: Email ID and timestamp for reference
+### **Response Handling**
+- **Success (200/201)**: Inquiry submitted successfully
+- **Error (400)**: Validation error or missing fields
+- **Error (500)**: Server error or email service unavailable
+- **Timeout**: Network or service unavailability
+
+
 
 ## Example Usage Scenarios
 
@@ -251,9 +222,9 @@ Agent: [Calls submit_sales_inquiry with billing inquiry details]
 
 ### **Common Issues**
 
-#### **1. SMTP Configuration Issues**
-- **Problem**: Email not sending due to SMTP configuration
-- **Solution**: Check SMTP credentials and server settings
+#### **1. API Configuration Issues**
+- **Problem**: Email not sending due to API configuration
+- **Solution**: Check API endpoint and authentication settings
 - **Debug Tool**: Use `test_email_system` function
 
 #### **2. Missing Required Information**
@@ -267,38 +238,35 @@ Agent: [Calls submit_sales_inquiry with billing inquiry details]
 - **Fallback**: Provide alternative contact methods
 
 ### **Debug Tools**
-- **test_email_system**: Test SMTP connection and configuration
+- **test_email_system**: Test API connection and email functionality
 - **Enhanced Logging**: Track all inquiry processing steps
 - **Error Messages**: Clear feedback for troubleshooting
 
 ## Configuration Requirements
 
-### **Environment Variables**
+### **API Configuration**
 ```bash
-# Required for Email Functionality
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
+# Required for API Integration
+API_URL=https://your-api-domain.com
 
 # Optional Configuration
-SALES_EMAIL=sales@cowboytechnologies.com
 COMPANY_NAME=Cowboy Technologies, LLC
 ```
 
-### **SMTP Setup Instructions**
+### **API Setup Instructions**
 
-#### **Gmail Setup**
-1. Enable 2-factor authentication
-2. Generate App Password
-3. Use App Password in SMTP_PASSWORD
-4. Ensure "Less secure app access" is disabled
+#### **Backend API Requirements**
+1. Create `/api/sales/inquiry` endpoint
+2. Implement email sending functionality
+3. Configure SMTP settings in backend
+4. Set up proper error handling and validation
 
-#### **Other SMTP Providers**
-1. Check provider's SMTP settings
-2. Use appropriate port (587 for TLS, 465 for SSL)
-3. Verify authentication requirements
-4. Test connection before deployment
+#### **Email Service Configuration**
+The backend API should handle:
+- SMTP server configuration
+- Email template formatting
+- Delivery confirmation
+- Error logging and monitoring
 
 ## Future Enhancements
 
@@ -324,8 +292,8 @@ This system transforms sales inquiry handling from a basic note-taking process t
 
 ## Next Steps
 
-1. **Configure SMTP Settings**: Set up email credentials in environment variables
-2. **Test Email System**: Use `test_email_system` function to verify configuration
-3. **Train Sales Team**: Ensure sales team knows to check for inquiry emails
-4. **Monitor Performance**: Track inquiry volume and response times
-5. **Gather Feedback**: Collect feedback from callers and sales team for improvements
+1. **Implement API Endpoint**: Create the `/api/sales/inquiry` endpoint in your backend
+2. **Configure Email Service**: Set up SMTP configuration in your API environment
+3. **Test Integration**: Verify the AI agent can successfully submit inquiries
+4. **Monitor Performance**: Track inquiry volume and email delivery success
+5. **Gather Feedback**: Collect feedback from sales team on email quality

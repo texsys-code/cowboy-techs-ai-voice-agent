@@ -32,10 +32,3 @@ MAIN_OFFICE_NUMBER = os.getenv("MAIN_OFFICE_NUMBER", "+12108884900")
 # Agent configuration
 AGENT_NAME = os.getenv("AGENT_NAME", "telephony_agent")
 MODE = os.getenv("MODE", "production")
-
-# Email Configuration
-SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
-SMTP_USERNAME = os.getenv('SMTP_USERNAME')
-SMTP_PASSWORD = os.getenv('SMTP_PASSWORD')
-SALES_EMAIL = os.getenv('SALES_EMAIL', 'sales@cowboytechnologies.com')
