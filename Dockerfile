@@ -17,11 +17,10 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY telephony_agent.py .
-COPY halo_api.py .
+COPY agent.py .
 COPY config.py .
 
-RUN python telephony_agent.py download-files
+RUN python agent.py download-files
 
 # Create .env file with environment variables
 # These will be overridden by docker run -e or docker-compose
@@ -41,4 +40,4 @@ ENV AGENT_NAME="telephony_agent"
 EXPOSE 8080
 
 # Set the default command
-CMD ["python", "telephony_agent.py", "start"] 
+CMD ["python", "agent.py", "start"] 
