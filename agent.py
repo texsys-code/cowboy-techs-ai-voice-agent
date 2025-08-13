@@ -17,6 +17,7 @@ from lib.tools import get_current_time
 from lib.call_tools.end_call import end_call
 from lib.call_tools.caller import lookup_caller, store_caller_info, format_phone_number
 from lib.call_tools.tickets import open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies
+from lib.call_tools.sales import submit_sales_inquiry, test_email_system
 
 #load_dotenv()
 logger = logging.getLogger(AGENT_NAME)
@@ -134,6 +135,35 @@ async def entrypoint(ctx: JobContext):
         CRITICAL: For Equipment ID orders, use existing caller info from phone lookup.
         For non-Equipment ID orders, collect name, email, and callback number manually.
 
+        Sales Inquiry Process:
+        When someone has a sales or billing question, follow this script:
+        
+        1. Start with: "Great — I can take your information and have one of our sales representatives get in touch. May I have your name, phone number, email, and a brief description of what you're looking for?"
+        
+        2. Collect the following information:
+           - Name: Caller's full name
+           - Phone Number: Contact phone number
+           - Email: Contact email address
+           - Description: Brief description of what they're looking for
+           - Company: Company name (if they provide it)
+           - Additional Notes: Any other relevant information they share
+        
+        3. Use submit_sales_inquiry with all collected information:
+           - caller_name: The name they provided
+           - caller_phone: The phone number they provided
+           - caller_email: The email address they provided
+           - inquiry_description: The description of what they're looking for
+           - caller_company: Company name (if provided)
+           - additional_notes: Any additional notes (if provided)
+        
+        4. After submission:
+           - The system will automatically send an email to the sales team
+           - Provide the caller with confirmation that their inquiry has been submitted
+           - Ask if there's anything else you can help them with
+        
+        CRITICAL: Always collect all required information (name, phone, email, description) before submitting the sales inquiry.
+        The email will be sent automatically to the sales team for follow-up.
+
         Note: The system automatically uses the caller's name and company from their phone number lookup, so you don't need to ask for this information again if it's already available.
 
         Important guidelines:
@@ -158,7 +188,7 @@ async def entrypoint(ctx: JobContext):
         - For ticket confirmation: Call open_it_support_ticket with confirmed=False
         - For success messages: The function will return a [NON_INTERRUPTIBLE] message
         - For instructions: The function will return a [NON_INTERRUPTIBLE] message""",
-        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies]
+        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies, submit_sales_inquiry, test_email_system]
     )
     
     # Configure the voice processing pipeline optimized for telephony
