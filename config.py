@@ -31,3 +31,4 @@ MAIN_OFFICE_NUMBER = os.getenv("MAIN_OFFICE_NUMBER", "+12108884900")
 
 # Agent configuration
 AGENT_NAME = os.getenv("AGENT_NAME", "telephony_agent")
+MODE = os.getenv("MODE", "production")

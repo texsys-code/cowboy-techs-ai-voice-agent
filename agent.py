@@ -10,13 +10,13 @@ from livekit.agents import (
     function_tool
 )
 from livekit.plugins import deepgram, openai, cartesia, silero
-from config import API_URL, MAIN_OFFICE_NUMBER, COMPANY_NAME, EMAIL_DOMAIN, AGENT_NAME
+from config import API_URL, MAIN_OFFICE_NUMBER, COMPANY_NAME, EMAIL_DOMAIN, AGENT_NAME, MODE
 
 # Import function tools from separate file
 from lib.tools import get_current_time
 from lib.call_tools.end_call import end_call
 from lib.call_tools.caller import lookup_caller, store_caller_info, format_phone_number
-from lib.call_tools.tickets import open_it_support_ticket, open_copier_support_ticket, debug_ticket_context
+from lib.call_tools.tickets import open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies
 
 #load_dotenv()
 logger = logging.getLogger(AGENT_NAME)
@@ -81,7 +81,7 @@ async def entrypoint(ctx: JobContext):
         Only ask for information that's NOT already available.
         
         1. Start with: "Sure, I can help you with that. Do you have an Equipment ID number for the machine that needs service?"
-        
+
         2. If they say YES:
            - Ask: "Great — please provide the Equipment ID number."
            - Collect: Equipment ID number
@@ -104,6 +104,35 @@ async def entrypoint(ctx: JobContext):
         
         CRITICAL: The caller's name, company, and phone number are automatically available from the phone lookup.
         DO NOT ask for this information again. Only collect equipment details and problem description.
+
+        Copier Supplies Ordering Process:
+        When someone wants to order copier supplies, follow this script:
+        
+        1. Start with: "Sure, I can help you place a supply order. Do you have an Equipment ID number for this request?"
+        
+        2. If they say YES:
+           - Ask: "Please provide the Equipment ID number and the type of supplies you need — you can be as specific as 'BP700NT toner' or as general as 'cyan toner for this ID number.'"
+           - Collect: Equipment ID and supply details
+           - Use order_copier_supplies with equipment_id, supply_details, and confirmed=False
+           - After confirmation, use order_copier_supplies with confirmed=True
+           - After order is placed, ask: "Will that be all today or Would you like to add another Equipment ID number for a separate supply request? (Yes/No)"
+           - If YES, repeat the process for additional equipment
+           - If NO, continue with conversation
+           - NOTE: Use existing caller info (name, company, phone) from context
+        
+        3. If they say NO:
+           - Ask: "Please tell me the item number and type of supplies you need."
+           - Collect: item_number and supply_details
+           - Ask: "May I have your name, email address, and callback number?"
+           - Collect: caller_name, caller_email, callback_number
+           - Use order_copier_supplies with item_number, supply_details, caller_name, caller_email, callback_number, and confirmed=False
+           - After confirmation, use order_copier_supplies with confirmed=True
+        
+        4. After final order is placed:
+           - Say: "Your order has been placed. By the way, we offer an auto-replenishment program so toner ships automatically when your supply level reaches a set percentage. If you'd like to enroll, just press 1."
+        
+        CRITICAL: For Equipment ID orders, use existing caller info from phone lookup.
+        For non-Equipment ID orders, collect name, email, and callback number manually.
 
         Note: The system automatically uses the caller's name and company from their phone number lookup, so you don't need to ask for this information again if it's already available.
 
@@ -129,7 +158,7 @@ async def entrypoint(ctx: JobContext):
         - For ticket confirmation: Call open_it_support_ticket with confirmed=False
         - For success messages: The function will return a [NON_INTERRUPTIBLE] message
         - For instructions: The function will return a [NON_INTERRUPTIBLE] message""",
-        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context]
+        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies]
     )
     
     # Configure the voice processing pipeline optimized for telephony
@@ -203,11 +232,18 @@ async def entrypoint(ctx: JobContext):
     base_greeting = "I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, help with a sales or billing question, or transfer you to a representative. What can I help you with today?"
 
     if hasattr(ctx, 'caller_first_name') and ctx.caller_first_name:
-        if ctx.caller_first_name:
-            greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}. I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, help with a sales or billing question, or transfer you to a representative. What can I help you with today?"
+        if MODE == "dev":
+            greeting_message = f"{time_greeting} {ctx.caller_first_name}! How can I help you today?"
+        else:
+            if ctx.caller_first_name:
+                greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}. I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, help with a sales or billing question, or transfer you to a representative. What can I help you with today?"
     else:
-        greeting_message = f"{time_greeting}! Thank you for calling {COMPANY_NAME}. {base_greeting}"
+        if MODE == "dev":
+            greeting_message = f"{time_greeting}! How can I help you today?"
+        else:
+            greeting_message = f"{time_greeting}! Thank you for calling {COMPANY_NAME}. {base_greeting}"
 
+    
     await session.say(
         greeting_message,
         allow_interruptions=False
