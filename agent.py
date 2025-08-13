@@ -73,7 +73,39 @@ async def entrypoint(ctx: JobContext):
         - First call: confirmed=False to show confirmation message
         - Second call: confirmed=True to actually create the ticket
         
-        Note: The system automatically uses the caller's name and company from their phone number lookup, so you don't need to ask for this information again.
+        Copier Support Ticket Process:
+        When someone wants to open a copier support ticket, follow this script:
+        
+        IMPORTANT: DO NOT ask for caller information that's already available from the phone lookup!
+        The system automatically has: name, company, phone number from the caller lookup.
+        Only ask for information that's NOT already available.
+        
+        1. Start with: "Sure, I can help you with that. Do you have an Equipment ID number for the machine that needs service?"
+        
+        2. If they say YES:
+           - Ask: "Great — please provide the Equipment ID number."
+           - Collect: Equipment ID number
+           - Ask: "Can you describe the problem you're having with this equipment?"
+           - Collect: problem description
+           - Use open_copier_support_ticket with equipment_id, details, and confirmed=False
+           - After confirmation, use open_copier_support_ticket with confirmed=True
+           - NOTE: Use existing caller info (name, company, phone) from context
+        
+        3. If they say NO:
+           - Ask: "No problem — please provide the make and model and serial number, if you have it, of the equipment."
+           - Collect: make_model, serial_number
+           - Ask: "Are you currently contracted under a service maintenance agreement with Cowboy Technologies, LLC?"
+           - Collect: service_agreement (true/false)
+           - Ask: "Can you describe the problem you're having?"
+           - Collect: problem description
+           - Use open_copier_support_ticket with make_model, serial_number, service_agreement, details, and confirmed=False
+           - After confirmation, use open_copier_support_ticket with confirmed=True
+           - NOTE: Use existing caller info (name, company, phone) from context
+        
+        CRITICAL: The caller's name, company, and phone number are automatically available from the phone lookup.
+        DO NOT ask for this information again. Only collect equipment details and problem description.
+
+        Note: The system automatically uses the caller's name and company from their phone number lookup, so you don't need to ask for this information again if it's already available.
 
         Important guidelines:
         - When the user says they are done, want to hang up, or end the call, use the end_call function which will say goodbye and then end the call.
