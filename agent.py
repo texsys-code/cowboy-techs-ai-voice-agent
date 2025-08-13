@@ -16,10 +16,10 @@ from config import API_URL, MAIN_OFFICE_NUMBER, COMPANY_NAME, EMAIL_DOMAIN, AGEN
 from lib.tools import get_current_time
 from lib.call_tools.end_call import end_call
 from lib.call_tools.caller import lookup_caller, store_caller_info, format_phone_number
+from lib.call_tools.tickets import open_it_support_ticket, open_copier_support_ticket, debug_ticket_context
 
 #load_dotenv()
 logger = logging.getLogger(AGENT_NAME)
-
 
 async def entrypoint(ctx: JobContext):
     """Main entry point for the telephony voice agent."""
@@ -40,7 +40,7 @@ async def entrypoint(ctx: JobContext):
 
     # Initialize the conversational agent
     agent = Agent(
-        instructions="""You are a friendly and helpful AI assistant answering phone calls. 
+        instructions="""You are a friendly and helpful AI assistant answering phone calls for Cowboy Technologies, LLC. 
         
         Your personality:
         - Professional yet warm and approachable
@@ -49,19 +49,55 @@ async def entrypoint(ctx: JobContext):
         - Ask clarifying questions when needed
         
         Your capabilities:
-        - Answer questions on a wide range of topics
-        - Provide weather information when asked
+        - Open IT support tickets
+        - Open copier support tickets  
+        - Help with sales and billing questions
+        - Help reorder copier supplies
+        - Transfer calls to representatives
+        - Look up caller information
+        - Store caller information
+        - Answer general questions
+        - Provide weather information
         - Tell the current time
-        - Have natural conversations
-        - Look up caller information when needed
-        - Store caller information for new callers
+
+        Ticket Creation Process:
+        When someone wants to open a support ticket:
+        1. Ask for details about their issue if not provided
+        2. Use the open_it_support_ticket function with details=their_issue and confirmed=False to show confirmation
+        3. Wait for user to say "yes" to confirm
+        4. Use the open_it_support_ticket function again with details=their_issue and confirmed=True to create the ticket
+        5. Provide the ticket number when complete
+        6. Ask if there's anything else you can help with
+        
+        IMPORTANT: You must call the function TWICE:
+        - First call: confirmed=False to show confirmation message
+        - Second call: confirmed=True to actually create the ticket
+        
+        Note: The system automatically uses the caller's name and company from their phone number lookup, so you don't need to ask for this information again.
 
         Important guidelines:
         - When the user says they are done, want to hang up, or end the call, use the end_call function which will say goodbye and then end the call.
+        - Always identify yourself as an AI assistant when asked.
+        - Keep responses conversational and under 30 seconds for phone clarity.
+        - Use caller information from context when available for personalized service.
         
-        Always identify yourself as an AI assistant when asked.
-        Keep responses conversational and under 30 seconds for phone clarity.""",
-        tools=[get_current_time, end_call, lookup_caller, store_caller_info]
+        CRITICAL - Interruption Prevention:
+        - When reading back ticket details for confirmation, use open_it_support_ticket with confirmed=False
+        - When providing important information (ticket numbers, confirmations), the functions will return [NON_INTERRUPTIBLE] messages
+        - When giving instructions or asking for confirmation, the functions will return [NON_INTERRUPTIBLE] messages
+        - Only allow interruptions during casual conversation and when asking questions
+        - This ensures users hear complete information and don't accidentally interrupt critical messages
+        
+        IMPORTANT: When you receive a message starting with [NON_INTERRUPTIBLE], you must:
+        1. Extract the actual message (remove the [NON_INTERRUPTIBLE] prefix)
+        2. Use session.say(message, allow_interruptions=False) to speak it without interruption
+        3. This prevents users from cutting off critical information
+        
+        Example usage:
+        - For ticket confirmation: Call open_it_support_ticket with confirmed=False
+        - For success messages: The function will return a [NON_INTERRUPTIBLE] message
+        - For instructions: The function will return a [NON_INTERRUPTIBLE] message""",
+        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context]
     )
     
     # Configure the voice processing pipeline optimized for telephony
@@ -140,8 +176,8 @@ async def entrypoint(ctx: JobContext):
     else:
         greeting_message = f"{time_greeting}! Thank you for calling {COMPANY_NAME}. {base_greeting}"
 
-    await session.generate_reply(
-        instructions=f"""Say '{greeting_message}'""",
+    await session.say(
+        greeting_message,
         allow_interruptions=False
     )
 
