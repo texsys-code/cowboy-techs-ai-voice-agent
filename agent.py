@@ -17,6 +17,7 @@ from lib.tools import get_current_time
 from lib.call_tools.end_call import end_call
 from lib.call_tools.caller import lookup_caller, store_caller_info, format_phone_number
 from lib.call_tools.tickets import open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies
+from lib.call_tools.emails import send_copier_support_email, send_copier_supplies_email
 from lib.call_tools.sales import submit_sales_inquiry, test_email_system
 
 #load_dotenv()
@@ -51,15 +52,18 @@ async def entrypoint(ctx: JobContext):
         
         Your capabilities:
         - Open IT support tickets
-        - Open copier support tickets  
+        - Send copier support requests (emails to service team)
         - Help with sales and billing questions
-        - Help reorder copier supplies
+        - Send copier supplies requests (emails to service team)
         - Transfer calls to representatives
         - Look up caller information
         - Store caller information
         - Answer general questions
         - Provide weather information
         - Tell the current time
+        
+        NOTE: Copier support and supplies now send emails to the service team instead of creating tickets.
+        The ticket creation functions are still available for future use if needed.
 
         Ticket Creation Process:
         When someone wants to open a support ticket:
@@ -74,7 +78,7 @@ async def entrypoint(ctx: JobContext):
         - First call: confirmed=False to show confirmation message
         - Second call: confirmed=True to actually create the ticket
         
-        Copier Support Ticket Process:
+        Copier Support Process:
         When someone wants to open a copier support ticket, follow this script:
         
         IMPORTANT: DO NOT ask for caller information that's already available from the phone lookup!
@@ -88,8 +92,8 @@ async def entrypoint(ctx: JobContext):
            - Collect: Equipment ID number
            - Ask: "Can you describe the problem you're having with this equipment?"
            - Collect: problem description
-           - Use open_copier_support_ticket with equipment_id, details, and confirmed=False
-           - After confirmation, use open_copier_support_ticket with confirmed=True
+           - Use send_copier_support_email with equipment_id, details, and confirmed=False
+           - After confirmation, use send_copier_support_email with confirmed=True
            - NOTE: Use existing caller info (name, company, phone) from context
         
         3. If they say NO:
@@ -99,12 +103,14 @@ async def entrypoint(ctx: JobContext):
            - Collect: service_agreement (true/false)
            - Ask: "Can you describe the problem you're having?"
            - Collect: problem description
-           - Use open_copier_support_ticket with make_model, serial_number, service_agreement, details, and confirmed=False
-           - After confirmation, use open_copier_support_ticket with confirmed=True
+           - Use send_copier_support_email with make_model, serial_number, service_agreement, details, and confirmed=False
+           - After confirmation, use send_copier_support_email with confirmed=True
            - NOTE: Use existing caller info (name, company, phone) from context
         
         CRITICAL: The caller's name, company, and phone number are automatically available from the phone lookup.
         DO NOT ask for this information again. Only collect equipment details and problem description.
+        
+        NOTE: This process now sends emails to the service team instead of creating tickets.
 
         Copier Supplies Ordering Process:
         When someone wants to order copier supplies, follow this script:
@@ -114,8 +120,8 @@ async def entrypoint(ctx: JobContext):
         2. If they say YES:
            - Ask: "Please provide the Equipment ID number and the type of supplies you need — you can be as specific as 'BP700NT toner' or as general as 'cyan toner for this ID number.'"
            - Collect: Equipment ID and supply details
-           - Use order_copier_supplies with equipment_id, supply_details, and confirmed=False
-           - After confirmation, use order_copier_supplies with confirmed=True
+           - Use send_copier_supplies_email with equipment_id, supply_details, and confirmed=False
+           - After confirmation, use send_copier_supplies_email with confirmed=True
            - After order is placed, ask: "Will that be all today or Would you like to add another Equipment ID number for a separate supply request? (Yes/No)"
            - If YES, repeat the process for additional equipment
            - If NO, continue with conversation
@@ -126,14 +132,16 @@ async def entrypoint(ctx: JobContext):
            - Collect: item_number and supply_details
            - Ask: "May I have your name, email address, and callback number?"
            - Collect: caller_name, caller_email, callback_number
-           - Use order_copier_supplies with item_number, supply_details, caller_name, caller_email, callback_number, and confirmed=False
-           - After confirmation, use order_copier_supplies with confirmed=True
+           - Use send_copier_supplies_email with item_number, supply_details, caller_name, caller_email, callback_number, and confirmed=False
+           - After confirmation, use send_copier_supplies_email with confirmed=True
         
         4. After final order is placed:
-           - Say: "Your order has been placed. By the way, we offer an auto-replenishment program so toner ships automatically when your supply level reaches a set percentage. If you'd like to enroll, just press 1."
+           - Say: "Your supplies request has been sent to our service team. By the way, we offer an auto-replenishment program so toner ships automatically when your supply level reaches a set percentage. If you'd like to enroll, just press 1."
         
         CRITICAL: For Equipment ID orders, use existing caller info from phone lookup.
         For non-Equipment ID orders, collect name, email, and callback number manually.
+        
+        NOTE: This process now sends emails to the service team instead of creating tickets.
 
         Sales Inquiry Process:
         When someone has a sales or billing question, follow this script:
@@ -188,7 +196,7 @@ async def entrypoint(ctx: JobContext):
         - For ticket confirmation: Call open_it_support_ticket with confirmed=False
         - For success messages: The function will return a [NON_INTERRUPTIBLE] message
         - For instructions: The function will return a [NON_INTERRUPTIBLE] message""",
-        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies, submit_sales_inquiry, test_email_system]
+        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies, send_copier_support_email, send_copier_supplies_email, submit_sales_inquiry, test_email_system]
     )
     
     # Configure the voice processing pipeline optimized for telephony
@@ -259,14 +267,14 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"[GREETING] Context caller_first_name: '{getattr(ctx, 'caller_first_name', None)}'")
     logger.info(f"[GREETING] Context caller_company: '{getattr(ctx, 'caller_company', None)}'")
     
-    base_greeting = "I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, help with a sales or billing question, or transfer you to a representative. What can I help you with today?"
+    base_greeting = "I can help you open an IT support ticket, send a copier support request, help you reorder copier supplies, help with a sales or billing question, or transfer you to a representative. What can I help you with today?"
 
     if hasattr(ctx, 'caller_first_name') and ctx.caller_first_name:
         if MODE == "dev":
             greeting_message = f"{time_greeting} {ctx.caller_first_name}! How can I help you today?"
         else:
             if ctx.caller_first_name:
-                greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}. I can help you open an IT support ticket, open a copier support ticket, help you reorder copier supplies, help with a sales or billing question, or transfer you to a representative. What can I help you with today?"
+                greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}. I can help you open an IT support ticket, send a copier support request, help you reorder copier supplies, help with a sales or billing question, or transfer you to a representative. What can I help you with today?"
     else:
         if MODE == "dev":
             greeting_message = f"{time_greeting}! How can I help you today?"
