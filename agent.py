@@ -16,7 +16,7 @@ from config import API_URL, MAIN_OFFICE_NUMBER, COMPANY_NAME, EMAIL_DOMAIN, AGEN
 from lib.tools import get_current_time
 from lib.call_tools.end_call import end_call
 from lib.call_tools.caller import lookup_caller, store_caller_info, format_phone_number
-from lib.call_tools.tickets import open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies
+from lib.call_tools.tickets import open_it_support_ticket, debug_ticket_context, collect_caller_email
 from lib.call_tools.emails import send_copier_support_email, send_copier_supplies_email
 from lib.call_tools.sales import submit_sales_inquiry, test_email_system
 
@@ -62,8 +62,41 @@ async def entrypoint(ctx: JobContext):
         - Provide weather information
         - Tell the current time
         
-        NOTE: Copier support and supplies now send emails to the service team instead of creating tickets.
-        The ticket creation functions are still available for future use if needed.
+        CRITICAL - Copier Requests:
+        - Copier support requests: Use send_copier_support_email function
+        - Copier supplies requests: Use send_copier_supplies_email function
+        - NEVER use order_copier_supplies or open_copier_support_ticket functions
+        - All copier requests now send emails to the service team instead of creating tickets
+
+        CRITICAL - Data Sanitization:
+        - All data has been sanitized to remove masking patterns (***, **, etc.)
+        - If you see [MASKED], [REDACTED], or [SENSITIVE] in any data, this is normal and expected
+        - NEVER read these placeholders literally - they indicate sensitive information has been removed
+        - When reading back information, skip any [MASKED], [REDACTED], or [SENSITIVE] placeholders
+        - Focus on the actual user-provided information, not system placeholders
+        
+        CRITICAL - Email Handling:
+        - ALWAYS check if caller email is already available from the phone lookup first
+        - If email is found in caller lookup: Use it automatically, do NOT ask for it again
+        - If email is NOT found in caller lookup: Use collect_caller_email function to get it
+        - NEVER accept invalid email formats (like "travis.thomsen@ibt,inc..com")
+        - The collect_caller_email function will validate and clean the email address
+        - Store the validated email in context for future use
+        
+        Example of proper email handling:
+        - If caller lookup found email: "I have your email from our system: john@company.com"
+        - If no email found: "I need your email address to complete this request. Please provide your email address."
+        - After collecting: "Thank you! I've recorded your email address as jane@company.com"
+        
+        Example usage:
+        - For ticket creation: Check if ctx.caller_email exists, if not use collect_caller_email
+        - For supply orders: Check if ctx.caller_email exists, if not use collect_caller_email
+        - For sales inquiries: Check if ctx.caller_email exists, if not use collect_caller_email
+
+        Example of proper data handling:
+        - If you see: "Name: John Doe, Company: [MASKED], Phone: 555-1234"
+        - You should say: "Name: John Doe, Phone: 555-1234" (skip the [MASKED] company)
+        - DO NOT say: "Name: John Doe, Company: masked, Phone: 555-1234"
 
         Ticket Creation Process:
         When someone wants to open a support ticket:
@@ -79,6 +112,7 @@ async def entrypoint(ctx: JobContext):
         - Second call: confirmed=True to actually create the ticket
         
         Copier Support Process:
+        CRITICAL: Use send_copier_support_email function for ALL copier support requests.
         When someone wants to open a copier support ticket, follow this script:
         
         IMPORTANT: DO NOT ask for caller information that's already available from the phone lookup!
@@ -111,8 +145,10 @@ async def entrypoint(ctx: JobContext):
         DO NOT ask for this information again. Only collect equipment details and problem description.
         
         NOTE: This process now sends emails to the service team instead of creating tickets.
-
+        CRITICAL: Always use send_copier_support_email function, never use open_copier_support_ticket.
+        
         Copier Supplies Ordering Process:
+        CRITICAL: Use send_copier_supplies_email function for ALL copier supplies requests.
         When someone wants to order copier supplies, follow this script:
         
         1. Start with: "Sure, I can help you place a supply order. Do you have an Equipment ID number for this request?"
@@ -141,8 +177,9 @@ async def entrypoint(ctx: JobContext):
         CRITICAL: For Equipment ID orders, use existing caller info from phone lookup.
         For non-Equipment ID orders, collect name, email, and callback number manually.
         
-        NOTE: This process now sends emails to the service team instead of creating tickets.
-
+                NOTE: This process now sends emails to the service team instead of creating tickets.
+        CRITICAL: Always use send_copier_supplies_email function, never use order_copier_supplies.
+        
         Sales Inquiry Process:
         When someone has a sales or billing question, follow this script:
         
@@ -196,7 +233,7 @@ async def entrypoint(ctx: JobContext):
         - For ticket confirmation: Call open_it_support_ticket with confirmed=False
         - For success messages: The function will return a [NON_INTERRUPTIBLE] message
         - For instructions: The function will return a [NON_INTERRUPTIBLE] message""",
-        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, open_copier_support_ticket, debug_ticket_context, order_copier_supplies, send_copier_support_email, send_copier_supplies_email, submit_sales_inquiry, test_email_system]
+        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, debug_ticket_context, send_copier_support_email, send_copier_supplies_email, submit_sales_inquiry, test_email_system, collect_caller_email]
     )
     
     # Configure the voice processing pipeline optimized for telephony
