@@ -75,12 +75,19 @@ async def entrypoint(ctx: JobContext):
         ),
         
         # Text-to-Speech - Cartesia Sonic-2
-        tts=cartesia.TTS(
-            model="sonic-2",
-            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",  # Professional female voice
-            language="en",
-            speed=1.0,
-            sample_rate=24000
+        #tts=cartesia.TTS(
+        #    model="sonic-2",
+        #    voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",  # Professional female voice
+        #    language="en",
+        #    speed=1.0,
+        #    sample_rate=24000
+        #)
+
+        # Text-to-Speech - OpenAI TTS (Alternative to Cartesia)
+        tts=openai.TTS(
+            model="tts-1",  # OpenAI's high-quality TTS model
+            voice="alloy",  # Professional voice (alloy, echo, fable, onyx, nova, shimmer)
+            speed=1.0
         )
     )
     
@@ -107,9 +114,13 @@ async def entrypoint(ctx: JobContext):
         ctx.caller_phone_number = clean_phone
         
         # Look up caller in database using your fixed function
+        logger.info(f"[CALLER_LOOKUP] About to call lookup_caller with phone: {clean_phone}")
         await lookup_caller(clean_phone)
         
         logger.info(f"[CALLER_LOOKUP] Caller lookup completed")
+        logger.info(f"[CALLER_LOOKUP] Context after lookup - caller_first_name: '{getattr(ctx, 'caller_first_name', None)}'")
+        logger.info(f"[CALLER_LOOKUP] Context after lookup - caller_email: '{getattr(ctx, 'caller_email', None)}'")
+        logger.info(f"[CALLER_LOOKUP] Context after lookup - caller_company: '{getattr(ctx, 'caller_company', None)}'")
     else:
         logger.warning(f"[CALLER_LOOKUP] Could not format phone number from participant identity: {participant.identity}")
         # Set unknown phone number
