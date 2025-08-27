@@ -21,8 +21,8 @@ from lib.call_tools.emails import send_copier_support_email, send_copier_supplie
 from lib.call_tools.sales import submit_sales_inquiry, test_email_system
 from lib.call_tools.callback import request_callback
 
-# Import agent instructions from separate file
-from instructions import AGENT_INSTRUCTIONS
+# Import agent instructions from modular system
+from instructions import get_greeting_instructions, get_active_instructions
 
 #load_dotenv()
 logger = logging.getLogger(AGENT_NAME)
@@ -30,7 +30,7 @@ logger = logging.getLogger(AGENT_NAME)
 async def entrypoint(ctx: JobContext):
     """Main entry point for the telephony voice agent."""
     await ctx.connect()
-    
+        
     # Wait for participant (caller) to join
     participant = await ctx.wait_for_participant()
     logger.info(f"Phone call connected from participant: {participant.identity}")
@@ -44,9 +44,10 @@ async def entrypoint(ctx: JobContext):
     clean_phone = format_phone_number(phone_number)
     logger.info(f"Formatted phone number: {clean_phone}")
 
-        # Initialize the conversational agent
+    # Initialize the conversational agent with greeting instructions
+    # Instructions will be updated dynamically based on caller requests
     agent = Agent(
-        instructions=AGENT_INSTRUCTIONS,
+    instructions=get_greeting_instructions(),
         tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, debug_ticket_context, send_copier_support_email, send_copier_supplies_email, submit_sales_inquiry, test_email_system, collect_caller_email, request_callback]
     )
     
