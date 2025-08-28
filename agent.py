@@ -169,7 +169,7 @@ async def entrypoint(ctx: JobContext):
         # Build the information collection request
         missing_fields = ctx.missing_caller_fields
         if missing_fields:
-            info_request = f"{time_greeting}! Before I can help you, I need to collect some information. "
+            info_request = f"{time_greeting}! Thank you for calling {COMPANY_NAME}. Before I can help you, I need to collect some information. "
             if 'name' in missing_fields:
                 info_request += "What is your name? "
             if 'company' in missing_fields:
