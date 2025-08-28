@@ -20,6 +20,7 @@ from lib.call_tools.caller import lookup_caller, store_caller_info, format_phone
 from lib.call_tools.tickets import open_it_support_ticket, debug_ticket_context, collect_caller_email
 from lib.call_tools.emails import send_copier_support_email, send_copier_supplies_email
 from lib.call_tools.sales import submit_sales_inquiry, test_email_system
+from lib.call_tools.billing import submit_billing_inquiry
 from lib.call_tools.callback import request_callback
 
 
@@ -51,7 +52,7 @@ async def entrypoint(ctx: JobContext):
     # Instructions will be updated dynamically based on caller requests
     agent = Agent(
     instructions=get_greeting_instructions(),
-        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, debug_ticket_context, send_copier_support_email, send_copier_supplies_email, submit_sales_inquiry, test_email_system, collect_caller_email, collect_caller_info, request_callback]
+        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, debug_ticket_context, send_copier_support_email, send_copier_supplies_email, submit_sales_inquiry, submit_billing_inquiry, test_email_system, collect_caller_email, collect_caller_info, request_callback]
     )
     
     # Configure the voice processing pipeline optimized for telephony
@@ -160,7 +161,7 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"[GREETING] Context caller_first_name: '{getattr(ctx, 'caller_first_name', None)}'")
     logger.info(f"[GREETING] Context caller_company: '{getattr(ctx, 'caller_company', None)}'")
     
-    base_greeting = "I can help you open an IT support ticket, send a copier support request, help you reorder copier supplies, help with a sales or billing question, request a callback from a representative. What can I help you with today?"
+    base_greeting = "I can help you open an IT support ticket, send a copier support request, help you reorder copier supplies, help with a sales question, help with a billing inquiry, request a callback from a representative, or speak with a representative. What can I help you with today?"
 
     # If we need caller information, collect it first
     if hasattr(ctx, 'need_caller_info') and ctx.need_caller_info:

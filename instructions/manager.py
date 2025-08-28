@@ -10,6 +10,7 @@ from .copier_supplies import COPIER_SUPPLIES_INSTRUCTIONS
 from .sales import SALES_INQUIRY_INSTRUCTIONS
 from .callback import CALLBACK_REQUEST_INSTRUCTIONS
 from .representative import REPRESENTATIVE_INSTRUCTIONS
+from .billing import BILLING_INQUIRY_INSTRUCTIONS
 
 class InstructionManager:
     """Manages dynamic loading of AI agent instructions based on context."""
@@ -24,6 +25,7 @@ class InstructionManager:
             'sales': SALES_INQUIRY_INSTRUCTIONS,
             'callback': CALLBACK_REQUEST_INSTRUCTIONS,
             'representative': REPRESENTATIVE_INSTRUCTIONS,
+            'billing': BILLING_INQUIRY_INSTRUCTIONS,
         }
     
     def get_instructions(self, context=None, caller_request=None):
@@ -93,6 +95,14 @@ class InstructionManager:
             'business', 'company', 'start service', 'switch to', 'competitor'
         ]):
             return self.specialized_instructions['sales']
+        
+        # Billing inquiries
+        elif any(phrase in request_lower for phrase in [
+            'billing', 'bill', 'invoice', 'payment', 'pay', 'account', 'accounts',
+            'accounts payable', 'accounts receivable', 'ap', 'ar', 'money owed',
+            'owe', 'owing', 'charge', 'charges', 'statement', 'balance'
+        ]):
+            return self.specialized_instructions['billing']
         
         # Representative requests (speak to someone)
         elif any(phrase in request_lower for phrase in [

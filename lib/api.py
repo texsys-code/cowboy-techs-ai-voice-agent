@@ -258,4 +258,131 @@ async def send_sales_inquiry_email(
             "error": "unexpected_error"
         }
 
+async def send_billing_inquiry_email(
+    caller_name: str,
+    caller_phone: str,
+    caller_email: str,
+    inquiry_type: str,
+    invoice_number: str = None,
+    inquiry_details: str = None,
+    caller_company: str = None
+):
+    """
+    Send a billing inquiry email via the API.
     
+    Args:
+        caller_name: Name of the person making the inquiry
+        caller_phone: Phone number for contact
+        caller_email: Email address for contact
+        inquiry_type: Type of billing inquiry (AP for Accounts Payable, AR for Accounts Receivable)
+        invoice_number: Invoice number if related to a specific invoice (optional)
+        inquiry_details: Additional details about the billing inquiry (optional)
+        caller_company: Company name (optional)
+        
+    Returns:
+        Dict containing success status and message
+    """
+    
+    logger.info(f"API: Sending billing inquiry email for {caller_name} - Type: {inquiry_type}")
+    
+    try:
+        # Prepare the email data for the unified email inquiry endpoint
+        email_data = {
+            "queue_name": "billing",
+            "caller_name": caller_name,
+            "caller_phone": caller_phone,
+            "caller_email": caller_email,
+            "inquiry_type": inquiry_type,
+            "invoice_number": invoice_number,
+            "inquiry_details": inquiry_details,
+            "caller_company": caller_company,
+            "priority": "medium",
+            "source": f"Voice Agent System - Billing Inquiry ({inquiry_type})"
+        }
+
+        logger.info(f"API: Sending billing inquiry email for {caller_name} with data: {email_data}")
+        
+        # Send POST request to the unified email inquiry endpoint
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{API_URL}/api/email/inquiry",
+                json=email_data,
+                headers={"Content-Type": "application/json"},
+                timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
+                
+                if response.status == 200 or response.status == 201:
+                    result = await response.json()
+                    logger.info(f"API: Billing inquiry email sent successfully for {caller_name}")
+                    return {
+                        "success": True,
+                        "message": "Billing inquiry submitted successfully",
+                        "email_id": result.get("data", {}).get("inquiry_id"),
+                        "timestamp": result.get("data", {}).get("timestamp")
+                    }
+                elif response.status == 400:
+                    error_data = await response.json()
+                    error_msg = f"Bad request: {error_data.get('message', 'Invalid data provided')}"
+                    logger.error(f"API: Billing inquiry email failed - {error_msg}")
+                    return {
+                        "success": False,
+                        "message": error_msg,
+                        "error": "bad_request"
+                    }
+                elif response.status == 401:
+                    error_msg = "Unauthorized - API credentials invalid"
+                    logger.error(f"API: Billing inquiry email failed - {error_msg}")
+                    return {
+                        "success": False,
+                        "message": error_msg,
+                        "error": "unauthorized"
+                    }
+                elif response.status == 403:
+                    error_msg = "Forbidden - API access denied"
+                    logger.error(f"API: Billing inquiry email failed - {error_msg}")
+                    return {
+                        "success": False,
+                        "message": error_msg,
+                        "error": "forbidden"
+                    }
+                elif response.status == 500:
+                    error_msg = "Internal server error - API temporarily unavailable"
+                    logger.error(f"API: Billing inquiry email failed - {error_msg}")
+                    return {
+                        "success": False,
+                        "message": error_msg,
+                        "error": "server_error"
+                    }
+                else:
+                    error_msg = f"Unexpected response: {response.status}"
+                    logger.error(f"API: Billing inquiry email failed - {error_msg}")
+                    return {
+                        "success": False,
+                        "message": error_msg,
+                        "error": "unexpected_response"
+                    }
+                    
+    except asyncio.TimeoutError:
+        error_msg = "Request timeout - API is not responding"
+        logger.error(f"API: Billing inquiry email failed - {error_msg}")
+        return {
+            "success": False,
+            "message": error_msg,
+            "error": "timeout"
+        }
+    except aiohttp.ClientError as e:
+        error_msg = f"Network error: {str(e)}"
+        logger.error(f"API: Billing inquiry email failed - {error_msg}")
+        return {
+            "success": False,
+            "message": error_msg,
+            "error": "network_error"
+        }
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        logger.error(f"API: Billing inquiry email failed - {error_msg}", exc_info=True)
+        return {
+            "success": False,
+            "message": error_msg,
+            "error": "unexpected_error"
+        }
