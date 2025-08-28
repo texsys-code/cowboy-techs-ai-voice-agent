@@ -9,6 +9,7 @@ from .copier_support import COPIER_SUPPORT_INSTRUCTIONS
 from .copier_supplies import COPIER_SUPPLIES_INSTRUCTIONS
 from .sales import SALES_INQUIRY_INSTRUCTIONS
 from .callback import CALLBACK_REQUEST_INSTRUCTIONS
+from .representative import REPRESENTATIVE_INSTRUCTIONS
 
 class InstructionManager:
     """Manages dynamic loading of AI agent instructions based on context."""
@@ -22,6 +23,7 @@ class InstructionManager:
             'copier_supplies': COPIER_SUPPLIES_INSTRUCTIONS,
             'sales': SALES_INQUIRY_INSTRUCTIONS,
             'callback': CALLBACK_REQUEST_INSTRUCTIONS,
+            'representative': REPRESENTATIVE_INSTRUCTIONS,
         }
     
     def get_instructions(self, context=None, caller_request=None):
@@ -92,12 +94,18 @@ class InstructionManager:
         ]):
             return self.specialized_instructions['sales']
         
-        # Callback requests
+        # Representative requests (speak to someone)
         elif any(phrase in request_lower for phrase in [
             'speak to someone', 'talk to someone', 'speak to representative',
             'talk to representative', 'speak to person', 'talk to person',
             'human', 'real person', 'live person', 'speak to live person',
-            'call me back', 'call back', 'callback', 'representative'
+            'representative', 'agent', 'operator', 'live agent', 'live operator'
+        ]):
+            return self.specialized_instructions['representative']
+        
+        # Callback requests
+        elif any(phrase in request_lower for phrase in [
+            'call me back', 'call back', 'callback', 'return call'
         ]):
             return self.specialized_instructions['callback']
         

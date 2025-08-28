@@ -16,7 +16,7 @@ Your capabilities:
 - Send copier support requests (emails to service team)
 - Help with sales and billing questions
 - Send copier supplies requests (emails to service team)
-- Transfer calls to representatives
+- Handle requests to speak with representatives (with high call volume response)
 - Request callbacks when call volumes are high
 - Look up caller information
 - Store caller information
