@@ -264,7 +264,7 @@ async def send_billing_inquiry_email(
     caller_email: str,
     inquiry_type: str,
     invoice_number: str = None,
-    inquiry_details: str = None,
+    inquiry_description: str = None,
     caller_company: str = None
 ):
     """
@@ -276,7 +276,7 @@ async def send_billing_inquiry_email(
         caller_email: Email address for contact
         inquiry_type: Type of billing inquiry (AP for Accounts Payable, AR for Accounts Receivable)
         invoice_number: Invoice number if related to a specific invoice (optional)
-        inquiry_details: Additional details about the billing inquiry (optional)
+        inquiry_description: Additional details about the billing inquiry (optional)
         caller_company: Company name (optional)
         
     Returns:
@@ -294,7 +294,7 @@ async def send_billing_inquiry_email(
             "caller_email": caller_email,
             "inquiry_type": inquiry_type,
             "invoice_number": invoice_number,
-            "inquiry_details": inquiry_details,
+            "inquiry_description": inquiry_description,
             "caller_company": caller_company,
             "priority": "medium",
             "source": f"Voice Agent System - Billing Inquiry ({inquiry_type})"

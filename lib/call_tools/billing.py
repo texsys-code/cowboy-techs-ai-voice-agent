@@ -9,7 +9,7 @@ logger = logging.getLogger("BILLING")
 async def submit_billing_inquiry(
     inquiry_type: str = None,
     invoice_number: str = None,
-    inquiry_details: str = None,
+    inquiry_description: str = None,
     confirmed: bool = False
 ):
     """
@@ -18,7 +18,7 @@ async def submit_billing_inquiry(
     Args:
         inquiry_type: Type of billing inquiry (AP for Accounts Payable, AR for Accounts Receivable)
         invoice_number: Invoice number if related to a specific invoice (optional)
-        inquiry_details: Additional details about the billing inquiry (optional)
+        inquiry_description: Additional details about the billing inquiry (optional)
         confirmed: Whether the user has confirmed the inquiry details
     """
     
@@ -63,8 +63,8 @@ async def submit_billing_inquiry(
             confirmation_message += f"Type: {normalized_type} ({'Accounts Payable' if normalized_type == 'AP' else 'Accounts Receivable'})\n"
             if invoice_number:
                 confirmation_message += f"Invoice Number: {invoice_number}\n"
-            if inquiry_details:
-                confirmation_message += f"Details: {inquiry_details}\n"
+            if inquiry_description:
+                confirmation_message += f"Details: {inquiry_description}\n"
             confirmation_message += f"Name: {ctx_caller_name or 'Not provided'}\n"
             confirmation_message += f"Company: {ctx_caller_company or 'Not provided'}\n"
             confirmation_message += f"Phone: {ctx_caller_phone or 'Not provided'}\n"
@@ -84,7 +84,7 @@ async def submit_billing_inquiry(
                 caller_email=ctx_caller_email,
                 inquiry_type=normalized_type,
                 invoice_number=invoice_number,
-                inquiry_details=inquiry_details,
+                inquiry_description=inquiry_description,
                 caller_company=ctx_caller_company
             )
             
