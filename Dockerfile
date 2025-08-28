@@ -16,9 +16,21 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy application files - be explicit about what we copy
 COPY agent.py .
 COPY config.py .
+
+# Copy lib directory contents (excluding __pycache__)
+COPY lib/ ./lib/
+
+# Copy instructions directory
+COPY instructions/ ./instructions/
+
+# Clean up any __pycache__ directories that might have been copied
+RUN find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+
+# Verify the lib directory structure
+RUN ls -la lib/ && ls -la lib/call_tools/
 
 RUN python agent.py download-files
 
