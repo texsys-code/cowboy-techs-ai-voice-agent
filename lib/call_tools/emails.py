@@ -375,3 +375,150 @@ async def send_copier_supplies_email(
         error_message = "[NON_INTERRUPTIBLE] I'm sorry, but there was an error while sending your supplies request. Please try again later or contact our support team directly."
         logger.error(f"Error sending copier supplies email: {str(e)}")
         return error_message
+
+@function_tool
+async def send_auto_replenishment_enrollment_email(
+    equipment_id: str = None,
+    confirmed: bool = False
+):
+    """
+    Send auto-replenishment enrollment email to the copier queue.
+    Args:
+        equipment_id: Equipment ID number if available.
+        confirmed: Whether the user has confirmed the enrollment.
+    """
+
+    # Get caller's information from context
+    ctx = get_job_context()
+    if not ctx:
+        logger.error("No job context available for auto-replenishment enrollment email")
+        return "I'm sorry, but I'm unable to send your auto-replenishment enrollment request at the moment due to a system error."
+    
+    # Get caller information from context
+    caller_name = getattr(ctx, 'caller_name', None)
+    caller_company = getattr(ctx, 'caller_company', None)
+    caller_phone = getattr(ctx, 'caller_phone_number', None)
+    caller_email = getattr(ctx, 'caller_email', None)
+    
+    logger.info(f"send_auto_replenishment_enrollment_email called with equipment_id='{equipment_id}', confirmed={confirmed}")
+    logger.info(f"Caller info - name: {caller_name}, company: {caller_company}, phone: {caller_phone}, email: {caller_email}")
+    
+    # If not confirmed, show confirmation and ask for approval
+    if not confirmed:
+        logger.info("Auto-replenishment enrollment email not confirmed, showing confirmation to caller")
+        
+        # Build confirmation message based on available information
+        confirmation_parts = []
+        
+        # Equipment information
+        if equipment_id:
+            confirmation_parts.append(f"Equipment ID: {equipment_id}")
+        else:
+            confirmation_parts.append("Equipment ID: Not specified (will be determined by service team)")
+        
+        # Caller information
+        if caller_name:
+            confirmation_parts.append(f"Name: {caller_name}")
+        if caller_company:
+            confirmation_parts.append(f"Company: {caller_company}")
+        if caller_phone:
+            confirmation_parts.append(f"Phone: {caller_phone}")
+        if caller_email:
+            confirmation_parts.append(f"Email: {caller_email}")
+        
+        # Check if we're using automatically found information
+        auto_found_info = []
+        if caller_name:
+            auto_found_info.append("name from our system")
+        if caller_company:
+            auto_found_info.append("company from our system")
+        if caller_phone:
+            auto_found_info.append("phone from our system")
+        if caller_email:
+            auto_found_info.append("email from our system")
+        
+        source_message = ""
+        if auto_found_info:
+            source_message = f" (I found your {' and '.join(auto_found_info)} using your phone number)"
+        
+        confirmation_message = (
+            f"[NON_INTERRUPTIBLE] Let me confirm your auto-replenishment enrollment details{source_message}:\n"
+            f"{chr(10).join(confirmation_parts)}\n"
+            "Please say 'yes' to confirm and I'll send your enrollment request, or let me know if you need to add or change anything."
+        )
+        
+        logger.info(f"Returning confirmation message for auto-replenishment enrollment: {confirmation_message[:100]}...")
+        return confirmation_message
+
+    # Email is confirmed, proceed with sending
+    logger.info("Auto-replenishment enrollment email confirmed, proceeding with sending")
+    
+    # Validate required information
+    required_fields = []
+    if not caller_name:
+        required_fields.append("name")
+    if not caller_company:
+        required_fields.append("company")
+    if not caller_phone:
+        required_fields.append("phone number")
+    if not caller_email:
+        required_fields.append("email address")
+    
+    if required_fields:
+        missing_fields = ", ".join(required_fields)
+        error_message = f"[NON_INTERRUPTIBLE] I'm sorry, but I need your {missing_fields} to send your auto-replenishment enrollment request. Please provide this information."
+        logger.error(f"Missing required information for auto-replenishment enrollment: {missing_fields}")
+        return error_message
+    
+    # Prepare email data with enhanced details
+    enhanced_details = f"Auto-Replenishment Program Enrollment Request\n\n"
+    enhanced_details += f"Caller Phone Number: {caller_phone}\n"
+    enhanced_details += f"Caller Email: {caller_email}\n"
+    
+    if equipment_id:
+        enhanced_details += f"Equipment ID: {equipment_id}\n"
+    else:
+        enhanced_details += "Equipment ID: Not specified (service team will contact to determine equipment)\n"
+    
+    enhanced_details += f"Enrollment Type: Auto-replenishment program for toner and supplies\n"
+    enhanced_details += f"Service Level: Automatic shipping when supply levels reach set percentage\n"
+    
+    # Prepare email inquiry data
+    email_data = {
+        "queue_name": "copier",
+        "caller_name": caller_name,
+        "caller_phone": caller_phone,
+        "caller_email": caller_email,
+        "inquiry_description": f"Auto-Replenishment Program Enrollment Request",
+        "caller_company": caller_company,
+        "additional_notes": enhanced_details,
+        "priority": "medium",
+        "source": "Voice Agent System - Auto-Replenishment Enrollment"
+    }
+    
+    logger.info(f"Sending auto-replenishment enrollment email with data: {email_data}")
+    
+    # Send email via API
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{API_URL}/api/email/inquiry",
+                json=email_data,
+                headers={"Content-Type": "application/json"}
+            ) as response:
+                
+                if response.status == 201:
+                    result = await response.json()
+                    success_message = f"[NON_INTERRUPTIBLE] Perfect! I've sent your auto-replenishment enrollment request to our service team. They'll review your request and contact you to set up the program details, including which equipment to monitor and what percentage threshold to use for automatic shipping. Is there anything else I can help you with today?"
+                    logger.info(f"Auto-replenishment enrollment email sent successfully")
+                    return success_message
+                else:
+                    error_text = await response.text()
+                    logger.error(f"Failed to send auto-replenishment enrollment email - API returned status {response.status}: {error_text}")
+                    error_message = "[NON_INTERRUPTIBLE] I'm sorry, but I was unable to send your auto-replenishment enrollment request. Please try again later or contact our support team directly."
+                    return error_message
+
+    except Exception as e:
+        error_message = "[NON_INTERRUPTIBLE] I'm sorry, but there was an error while sending your auto-replenishment enrollment request. Please try again later or contact our support team directly."
+        logger.error(f"Error sending auto-replenishment enrollment email: {str(e)}")
+        return error_message

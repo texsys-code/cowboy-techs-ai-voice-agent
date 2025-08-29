@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   api:
-    image: registry.texsys.io/ibt/ai-agent-api:1
+    image: registry.texsys.io/ibt/ai-agent-api:2
     container_name: ibt-api
     environment:
       # MongoDB Configuration
@@ -31,7 +31,7 @@ services:
     tty: true
 
   ai-voice-agent:
-    image: registry.texsys.io/ibt/ai-voice-agent:4
+    image: registry.texsys.io/ibt/ai-voice-agent:6
     container_name: ai-voice-agent
     environment:
       # LiveKit Configuration

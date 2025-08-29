@@ -17,7 +17,7 @@ from lib.tools import get_current_time
 from lib.call_tools.end_call import end_call
 from lib.call_tools.caller import lookup_caller, store_caller_info, format_phone_number
 from lib.call_tools.tickets import open_it_support_ticket, debug_ticket_context, collect_caller_email
-from lib.call_tools.emails import send_copier_support_email, send_copier_supplies_email
+from lib.call_tools.emails import send_copier_support_email, send_copier_supplies_email, send_auto_replenishment_enrollment_email
 from lib.call_tools.sales import submit_sales_inquiry, test_email_system
 from lib.call_tools.callback import request_callback
 
@@ -177,6 +177,13 @@ async def entrypoint(ctx: JobContext):
         4. After final order is placed:
             - Say: "Your supplies request has been sent to our service team. By the way, we offer an auto-replenishment program so toner ships automatically when your supply level reaches a set percentage. If you'd like to enroll, just press 1."
         
+        5. If caller wants to enroll in auto-replenishment program:
+            - Ask: "Great! Do you have an Equipment ID number for the machine you'd like to enroll in the auto-replenishment program?"
+            - If YES: Collect Equipment ID and use send_auto_replenishment_enrollment_email with equipment_id and confirmed=False
+            - If NO: Use send_auto_replenishment_enrollment_email with confirmed=False (no equipment_id)
+            - After confirmation, use send_auto_replenishment_enrollment_email with confirmed=True
+            - Explain: "The service team will contact you to set up the program details, including which equipment to monitor and what percentage threshold to use for automatic shipping."
+        
         CRITICAL: For Equipment ID orders, use existing caller info from phone lookup.
         For non-Equipment ID orders, collect name, email, and callback number manually.
         
@@ -188,7 +195,7 @@ async def entrypoint(ctx: JobContext):
         
         Always identify yourself as an AI assistant when asked.
         Keep responses conversational and under 30 seconds for phone clarity.""",
-        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, debug_ticket_context, send_copier_support_email, send_copier_supplies_email, submit_sales_inquiry, test_email_system, collect_caller_email, request_callback]
+        tools=[get_current_time, end_call, lookup_caller, store_caller_info, open_it_support_ticket, debug_ticket_context, send_copier_support_email, send_copier_supplies_email, send_auto_replenishment_enrollment_email, submit_sales_inquiry, test_email_system, collect_caller_email, request_callback]
     )
     
     # Configure the voice processing pipeline optimized for telephony
