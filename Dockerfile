@@ -49,7 +49,7 @@ ENV TZ="America/Chicago"
 ENV AGENT_NAME="telephony_agent"
 
 # Expose port (if needed for any web interface)
-EXPOSE 8080
+EXPOSE 8080 7881 7882
 
 # Set the default command
 CMD ["python", "agent.py", "start"] 

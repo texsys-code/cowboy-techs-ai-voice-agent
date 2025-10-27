@@ -11,7 +11,7 @@ from livekit.agents import (
     get_job_context
 )
 from livekit.plugins import deepgram, openai, cartesia, silero
-from config import API_URL, MAIN_OFFICE_NUMBER, COMPANY_NAME, EMAIL_DOMAIN, AGENT_NAME, MODE
+from config import API_URL, MAIN_OFFICE_NUMBER, COMPANY_NAME, AGENT_NAME, AI_AGENT_NAME, EMAIL_DOMAIN, MODE
 
 # Import function tools from separate file
 from lib.tools import get_current_time
@@ -77,20 +77,20 @@ async def entrypoint(ctx: JobContext):
         ),
 
         # Text-to-Speech - Cartesia Sonic-2
-        #tts=cartesia.TTS(
-        #    model="sonic-2",
-        #    voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",  # Professional female voice
-        #    language="en",
-        #    speed=1.0,
-        #    sample_rate=24000
-        #)
+        tts=cartesia.TTS(
+            model="sonic-2",
+            voice="f786b574-daa5-4673-aa0c-cbe3e8534c02",  # Professional female voice
+            language="en",
+            speed=0.85,
+            sample_rate=24000
+        )
         
         # Text-to-Speech - OpenAI TTS (Alternative to Cartesia)
-        tts=openai.TTS(
-            model="tts-1",  # OpenAI's high-quality TTS model
-            voice="alloy",  # Professional voice (alloy, echo, fable, onyx, nova, shimmer)
-            speed=1.0
-        )
+        #tts=openai.TTS(
+        #    model="tts-1",  # OpenAI's high-quality TTS model
+        #    voice="alloy",  # Professional voice (alloy, echo, fable, onyx, nova, shimmer)
+        #    speed=1.0
+        #)
     )
     
     # Start the agent session
@@ -167,7 +167,7 @@ async def entrypoint(ctx: JobContext):
         # Build the information collection request
         missing_fields = ctx.missing_caller_fields
         if missing_fields:
-            info_request = f"{time_greeting}! Thank you for calling {COMPANY_NAME}. Before I can help you, I need to collect some information. "
+            info_request = f"{time_greeting}! Thank you for calling {COMPANY_NAME}, this is {AGENT_NAME} and I'll be your virtual assistant. Before I can help you, I need to collect some information. "
             if 'name' in missing_fields:
                 info_request += "What is your name? "
             if 'company' in missing_fields:
@@ -187,21 +187,21 @@ async def entrypoint(ctx: JobContext):
         else:
             # Fallback greeting if no specific missing fields identified
             await session.say(
-                f"{time_greeting}! I need to collect some information before I can help you. What is your name?",
+                f"{time_greeting}! Thank you for calling {COMPANY_NAME}, this is {AGENT_NAME} and I'll be your virtual assistant. Before I can help you, I need to collect some information. What is your name?",
                 allow_interruptions=False
             )
     else:
         # We have complete caller information, give personalized greeting
         if hasattr(ctx, 'caller_first_name') and ctx.caller_first_name:
             if MODE == "dev":
-                greeting_message = f"{time_greeting} {ctx.caller_first_name}! How can I help you today?"
+                greeting_message = f"{time_greeting} {ctx.caller_first_name}! This is {AI_AGENT_NAME} and I'll be your virtual assistant. How can I help you today?"
             else:
-                greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}. {base_greeting}"
+                greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}, formerly IBT. This is {AI_AGENT_NAME} and I'll be your virtual assistant {base_greeting}"
         else:
             if MODE == "dev":
-                greeting_message = f"{time_greeting}! How can I help you today?"
+                greeting_message = f"{time_greeting}! This is {AI_AGENT_NAME} and I'll be your virtual assistant. How can I help you today?"
             else:
-                greeting_message = f"{time_greeting}! Thank you for calling {COMPANY_NAME}. {base_greeting}"
+                greeting_message = f"{time_greeting}! Thank you for calling {COMPANY_NAME}, formerly IBT. {base_greeting}"
         
         await session.say(
             greeting_message,
