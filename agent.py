@@ -158,7 +158,7 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"[GREETING] Context caller_first_name: '{getattr(ctx, 'caller_first_name', None)}'")
     logger.info(f"[GREETING] Context caller_company: '{getattr(ctx, 'caller_company', None)}'")
     
-    base_greeting = "I can help you open an IT support ticket, send a copier support request, help you reorder copier supplies, help with a sales question, help with a billing inquiry, or speak with a representative. What can I help you with today?"
+    base_greeting = "I can help you open an IT support ticket. Send a copier support request. Help you reorder copier supplies. Help with a sales question. Help with a billing inquiry. Or speak with a representative. What can I help you with today?"
 
     # If we need caller information, collect it first
     if hasattr(ctx, 'need_caller_info') and ctx.need_caller_info:
@@ -196,7 +196,7 @@ async def entrypoint(ctx: JobContext):
             if MODE == "dev":
                 greeting_message = f"{time_greeting} {ctx.caller_first_name}! This is {AI_AGENT_NAME} and I'll be your virtual assistant. How can I help you today?"
             else:
-                greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}, formerly IBT. This is {AI_AGENT_NAME} and I'll be your virtual assistant {base_greeting}"
+                greeting_message = f"{time_greeting} {ctx.caller_first_name}! Thank you for calling {COMPANY_NAME}, formerly IBT. This is {AI_AGENT_NAME} and I'll be your virtual assistant. {base_greeting}"
         else:
             if MODE == "dev":
                 greeting_message = f"{time_greeting}! This is {AI_AGENT_NAME} and I'll be your virtual assistant. How can I help you today?"
